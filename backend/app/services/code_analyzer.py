@@ -21,13 +21,21 @@ class CodeAnalyzer:
         pom = self.root / "pom.xml"
         if pom.exists():
             content = pom.read_text(encoding="utf-8", errors="ignore")
-            if "spring-boot" in content:
+            # 直接声明 or parent 继承方式
+            if "spring-boot" in content or "springframework.boot" in content:
                 return "spring-boot"
         build_gradle = self.root / "build.gradle"
         if build_gradle.exists():
             content = build_gradle.read_text(encoding="utf-8", errors="ignore")
-            if "spring-boot" in content:
+            if "spring-boot" in content or "springframework.boot" in content:
                 return "spring-boot"
+        # 通过 import 语句兜底检测
+        for java_file in self.root.rglob("*.java"):
+            content = java_file.read_text(encoding="utf-8", errors="ignore")
+            if "org.springframework.boot" in content:
+                return "spring-boot"
+            if "org.springframework" in content:
+                return "spring"
         return "unknown"
 
     def _find_controllers(self) -> List[str]:
