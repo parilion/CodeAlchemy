@@ -4,16 +4,7 @@ import chromadb
 
 class VectorStore:
     def __init__(self, collection_name: str, persist_dir: str = "./chroma_db"):
-        try:
-            client = chromadb.PersistentClient(path=persist_dir)
-        except Exception:
-            client = chromadb.Client(
-                chromadb.Settings(
-                    chroma_db_impl="duckdb+parquet",
-                    persist_directory=persist_dir,
-                    anonymized_telemetry=False,
-                )
-            )
+        client = chromadb.PersistentClient(path=persist_dir)
         self.collection = client.get_or_create_collection(collection_name)
 
     def add(self, documents: List[str], ids: List[str]) -> None:
