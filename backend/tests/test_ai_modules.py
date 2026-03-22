@@ -56,3 +56,57 @@ def test_chat_assistant_get_config_snippet():
     snippet = module.get_config_snippet()
     assert "ai:" in snippet
     assert isinstance(snippet, str)
+
+
+from app.ai_modules.smart_search import SmartSearchModule
+from app.ai_modules.smart_classify import SmartClassifyModule
+from app.ai_modules.collaborative_filter import CollaborativeFilterModule
+from app.ai_modules.rag_retrieval import RagRetrievalModule
+
+
+def test_smart_search_generates_inject_files():
+    module = SmartSearchModule()
+    files = module.get_inject_files({"base_package": "com.example.shop"})
+    assert len(files) > 0
+    assert any("SmartSearch" in k or "SmartSearch" in v for k, v in files.items())
+
+
+def test_smart_search_config_snippet():
+    module = SmartSearchModule()
+    snippet = module.get_config_snippet()
+    assert "ai:" in snippet
+
+
+def test_smart_classify_generates_inject_files():
+    module = SmartClassifyModule()
+    files = module.get_inject_files({"base_package": "com.example.shop"})
+    assert len(files) > 0
+    assert any("Classify" in k or "Classify" in v for k, v in files.items())
+
+
+def test_collaborative_filter_generates_inject_files():
+    module = CollaborativeFilterModule()
+    files = module.get_inject_files({"base_package": "com.example.shop"})
+    assert len(files) > 0
+    assert any("Recommend" in k or "Recommend" in v for k, v in files.items())
+
+
+def test_rag_retrieval_generates_inject_files():
+    module = RagRetrievalModule()
+    files = module.get_inject_files({"base_package": "com.example.shop"})
+    assert len(files) > 0
+    assert any("Rag" in k or "Rag" in v or "rag" in k.lower() for k, v in files.items())
+
+
+def test_all_modules_have_module_id():
+    modules = [SmartSearchModule(), SmartClassifyModule(), CollaborativeFilterModule(), RagRetrievalModule()]
+    for m in modules:
+        assert m.MODULE_ID != ""
+        assert m.MODULE_NAME != ""
+
+
+def test_all_modules_config_snippet_contains_ai():
+    modules = [SmartSearchModule(), SmartClassifyModule(), CollaborativeFilterModule(), RagRetrievalModule()]
+    for m in modules:
+        snippet = m.get_config_snippet()
+        assert "ai:" in snippet
