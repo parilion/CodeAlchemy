@@ -10,37 +10,72 @@ class SmartSearchModule(AIModule):
         base_pkg = project_analysis.get("base_package", "com.example.app")
         pkg_path = base_pkg.replace(".", "/")
         return {
-            f"src/main/java/{pkg_path}/ai/SmartSearchService.java":
-                self._render(base_pkg),
+            f"src/main/java/{pkg_path}/ai/SmartSearchService.java": self._render_service(base_pkg),
+            f"src/main/java/{pkg_path}/ai/SmartSearchController.java": self._render_controller(base_pkg),
         }
 
     def get_config_snippet(self) -> str:
         return "ai:\n  search:\n    enabled: true\n"
 
-    def _render(self, base_pkg: str) -> str:
+    def _render_service(self, base_pkg: str) -> str:
         return f"""package {base_pkg}.ai;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
 
 /**
- * 智能语义搜索服务 - AI赋能注入
- * 与精准搜索并行，用户可通过 searchMode 参数选择
- * searchMode="smart" 使用语义搜索，searchMode="precise" 使用原有精准搜索
+ * 智能语义搜索服务 - CodeAlchemy注入
+ * 将自然语言查询转换为关键词，配合原有搜索逻辑实现语义搜索
  */
 @Service
 public class SmartSearchService {{
 
+    @Autowired
+    private LLMClient llmClient;
+
     /**
-     * 语义搜索：将自然语言查询向量化后进行相似度匹配
-     * @param query 用户自然语言输入，如"关于Java编程的入门书"
-     * @param mode "smart"=语义搜索，"precise"=精准搜索（由原有逻辑处理）
+     * 从自然语言查询中提取搜索关键词
+     * 示例: "关于Java编程的入门书" → "Java 编程 入门"
      */
-    public List<String> search(String query, String mode) {{
-        if ("smart".equals(mode)) {{
-            // TODO: 调用向量化API进行语义检索
-            return List.of("语义搜索结果占位: " + query);
+    public String extractKeywords(String naturalQuery) {{
+        String systemPrompt = "你是一个搜索关键词提取助手。" +
+            "请从用户的自然语言查询中提取1-3个最关键的搜索词，" +
+            "只返回关键词，用空格分隔，不要其他内容。";
+        return llmClient.chat(systemPrompt, naturalQuery).trim();
+    }}
+}}"""
+
+    def _render_controller(self, base_pkg: str) -> str:
+        return f"""package {base_pkg}.ai;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+/**
+ * 智能搜索接口 - CodeAlchemy注入
+ * mode=smart: 语义搜索（返回提取的关键词）
+ * mode=precise: 精准搜索（直接返回原始输入）
+ */
+@RestController
+@RequestMapping("/api/ai/search")
+@CrossOrigin(origins = "*")
+public class SmartSearchController {{
+
+    @Autowired
+    private SmartSearchService smartSearchService;
+
+    @PostMapping
+    public Map<String, String> search(@RequestBody Map<String, String> req) {{
+        String query = req.getOrDefault("query", "");
+        String mode = req.getOrDefault("mode", "smart");
+
+        if ("precise".equals(mode)) {{
+            return Map.of("keywords", query, "mode", "precise", "original", query);
         }}
-        return List.of();
+
+        String keywords = smartSearchService.extractKeywords(query);
+        return Map.of("keywords", keywords, "mode", "smart", "original", query);
     }}
 }}"""
