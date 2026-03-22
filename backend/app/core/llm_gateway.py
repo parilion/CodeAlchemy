@@ -28,7 +28,7 @@ class LLMGateway:
 
     async def embed(self, text: str) -> List[float]:
         response = await litellm.aembedding(
-            model=f"text-embedding-3-small",
+            model=f"{self.provider}/text-embedding-3-small",
             input=[text],
             api_key=self.api_key,
         )
